@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15
+    container_name: restorely-db
+    environment:
+      POSTGRES_DB: restorely
+      POSTGRES_USER: restorely
+      POSTGRES_PASSWORD: restorely
+    ports:
+      - "5433:5432"
+    volumes:
+      - restorely_pg:/var/lib/postgresql/data
+
+volumes:
+  restorely_pg:
+
