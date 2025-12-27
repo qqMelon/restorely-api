@@ -4,13 +4,19 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/lib/pq"
 	httpapi "github.com/qqMelon/restorely-api/internal/http"
 )
 
 func main () {
-	db, err := sql.Open("postgres", "postgres://restorely:restorely@localhost:5433/restorely?sslmode=disable")
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Fatal("DATABASE_URL missing")
+	}
+
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}

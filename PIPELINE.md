@@ -90,9 +90,9 @@ Exemple:
 #### Pseudo-code Scheduler
 ```go
 for {
-    runPendingBackups()
-    runPendingRestoreTests()
-    time.Sleep(1 * time.Minutes)
+    runBackups()
+    runRestoreTests()
+    time.Sleep(1 * time.Minute)
 }
 ```
 

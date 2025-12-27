@@ -7,10 +7,34 @@ services:
       POSTGRES_USER: restorely
       POSTGRES_PASSWORD: restorely
     ports:
-      - "5433:5432"
+      # - "5433:5432"
+      - "5432:5432"
     volumes:
-      - restorely_pg:/var/lib/postgresql/data
+      - ./data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: restorely-api
+    environment:
+      DATABASE_URL: postgres://restorely:restorely@db:5432/restorely?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: restorely-worker
+    environment:
+      DATABASE_URL: postgres://restorely:restorely@db:5432/restorely?sslmode=disable
+    depends_on:
+      - db
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   restorely_pg:
-

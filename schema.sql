@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE databases (
   id UUID PRIMARY KEY,
   name TEXT NOT NULL,
@@ -20,4 +22,3 @@ CREATE TABLE restore_tests (
   duration_ms BIGINT,
   created_at TIMESTAMP DEFAULT now()
 );
-
