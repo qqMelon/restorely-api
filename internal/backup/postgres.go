@@ -5,38 +5,32 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"time"
 )
 
-type PostgresConfig struct {
-	DSN string
+type DatabaseConfig struct {
+	Host string `json:"host"`
+	Port int `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	DBName string `json:"db_name"`
 }
 
-func BackupPostgres(ctx context.Context, cfg PostgresConfig, outputPath string) error {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
-	defer cancel()
-
-	cmd := exec.CommandContext(
-		ctx,
+func RunPostgresBackup(ctx context.Context, d DatabaseConfig, output string) error {
+	cmd := exec.CommandContext(ctx,
 		"pg_dump",
-		"--format=custom",
-		"--no-owner",
-		"--no-aci",
-		cfg.DSN,
+		"-h", d.Host,
+		"-p", fmt.Sprintf("%d", d.Port),
+		"-U", d.Username,
+		"-d", d.DBName,
+		"-f", output,
 	)
 
-	file, err := os.Create(outputPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD="+d.Password,
+	)
 
-	cmd.Stdout = file
+	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("pg_dump failed: %w", err)
-	}
-
-	return nil
+	return cmd.Run()
 }

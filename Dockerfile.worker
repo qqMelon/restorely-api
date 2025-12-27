@@ -1,6 +1,9 @@
 FROM golang:alpine
 
-RUN apk add --no-cache docker-cli
+RUN apk add --no-cache \
+  docker-cli \
+  postgresql-client \
+  docker
 
 WORKDIR /app
 

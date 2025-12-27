@@ -30,27 +30,34 @@ func main () {
 	}
 }
 
-func runOnce (db *sql.DB) {
+func runOnce(db *sql.DB) {
 	ctx := context.Background()
 
 	rows, err := db.Query(`
-		SELECT id
-		FROM databases
+		SELECT d.id
+		FROM databases d
+		LEFT JOIN backups b ON b.database_id = d.id
+		GROUP BY d.id
+		HAVING MAX(b.created_at) IS NULL
+		   OR MAX(b.created_at) < NOW() - INTERVAL '1 hour'
 	`)
 	if err != nil {
-		log.Println("DB list error: ", err)
+		log.Println("DB list error:", err)
 		return
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var databaseID string
-		rows.Scan(&databaseID)
+		if err := rows.Scan(&databaseID); err != nil {
+			continue
+		}
 
-		log.Println("Running backup fo DB: ", databaseID)
+		log.Println("Running scheduled backup for DB:", databaseID)
 
 		start := time.Now()
-		time.Sleep(2 * time.Second) // SIMULATE BACKUP TIME
+		time.Sleep(2 * time.Second)
+
 		backupID, err := store.CreateBackup(
 			ctx,
 			db,
@@ -59,14 +66,15 @@ func runOnce (db *sql.DB) {
 			time.Since(start),
 		)
 		if err != nil {
-			log.Println("backup insert error: ", err)
+			log.Println("backup insert error:", err)
 			continue
 		}
 
-		log.Println("Running restore test for backup: ", backupID)
+		log.Println("Running restore test for backup:", backupID)
 
 		start = time.Now()
-		time.Sleep(3 * time.Second) // SIMULATE RESTORE TIME
+		time.Sleep(3 * time.Second)
+
 		err = store.CreateRestoreTest(
 			ctx,
 			db,
@@ -75,7 +83,7 @@ func runOnce (db *sql.DB) {
 			time.Since(start),
 		)
 		if err != nil {
-			log.Println("restore insert error: ", err)
+			log.Println("restore insert error:", err)
 			continue
 		}
 	}
