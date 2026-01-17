@@ -1,27 +1,23 @@
 package httpapi
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+)
 
 func (s *Server) Router() http.Handler {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 	})
 
-	mux.HandleFunc("/databases", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			s.CreateDatabase(w, r)
-			return 
-		}
-
-		if r.Method == http.MethodGet {
-			s.ListDatabases(w, r)
-			return 
-		}
+	r.Route("/databases", func(r chi.Router) {
+		r.Get("/", s.ListDatabases)
+		r.Post("/", s.CreateDatabase)
+		r.Get("/{id}/history", s.DatabaseHistory)
 	})
 
-	mux.HandleFunc("/databases/{id}/history", s.DatabaseHistory)
-
-	return withCORS(mux)
+	return withCORS(r)
 }

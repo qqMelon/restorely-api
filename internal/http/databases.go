@@ -37,13 +37,21 @@ func (s *Server) DatabaseHistory(w http.ResponseWriter, r *http.Request) {
 	dbID := chi.URLParam(r, "id")
 
 	rows, err := s.DB.Query(`
-		SELECT 'backup' AS type, status, created_at, duration_ms
-		FROM backups
-		WHERE database_id = $1
+		SELECT
+		  'backup' AS type,
+		  b.status,
+		  b.created_at,
+		  b.duration_ms
+		FROM backups b
+		WHERE b.database_id = $1
 
 		UNION ALL
 
-		SELECT 'restore' AS type, status, created_at, duration_ms
+		SELECT
+		  'restore' AS type,
+		  rt.status,
+		  rt.created_at,
+		  rt.duration_ms
 		FROM restore_tests rt
 		JOIN backups b ON b.id = rt.backup_id
 		WHERE b.database_id = $1
@@ -52,20 +60,29 @@ func (s *Server) DatabaseHistory(w http.ResponseWriter, r *http.Request) {
 		LIMIT 50
 	`, dbID)
 	if err != nil {
-		http.Error(w, "query failed", 500)
+		http.Error(w, "query failed", http.StatusInternalServerError)
+		fmt.Println(err)
 		return
 	}
-
 	defer rows.Close()
 
 	var history []HistoryItems
 
 	for rows.Next() {
 		var h HistoryItems
-		rows.Scan(&h.Type, &h.Status, &h.CreatedAt, &h.DurationMS)
+		if err := rows.Scan(
+			&h.Type,
+			&h.Status,
+			&h.CreatedAt,
+			&h.DurationMS,
+		); err != nil {
+			http.Error(w, "scan failed", http.StatusInternalServerError)
+			return
+		}
 		history = append(history, h)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(history)
 }
 
