@@ -8,9 +8,17 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/qqMelon/restorely-api/internal/store"
 )
+
+type HistoryItems struct {
+	Type string `json:"type"`
+	Status string `json:"status"`
+	CreatedAt string `json:"created_at"`
+	DurationMS int64 `json:"duration_ms"`
+}
 
 type CreateDatabaseRequest struct {
 	Name string `json:"name"`
@@ -23,6 +31,42 @@ type CreateDatabaseRequest struct {
 
 type Server struct {
 	DB *sql.DB
+}
+
+func (s *Server) DatabaseHistory(w http.ResponseWriter, r *http.Request) {
+	dbID := chi.URLParam(r, "id")
+
+	rows, err := s.DB.Query(`
+		SELECT 'backup' AS type, status, created_at, duration_ms
+		FROM backups
+		WHERE database_id = $1
+
+		UNION ALL
+
+		SELECT 'restore' AS type, status, created_at, duration_ms
+		FROM restore_tests rt
+		JOIN backups b ON b.id = rt.backup_id
+		WHERE b.database_id = $1
+
+		ORDER BY created_at DESC
+		LIMIT 50
+	`, dbID)
+	if err != nil {
+		http.Error(w, "query failed", 500)
+		return
+	}
+
+	defer rows.Close()
+
+	var history []HistoryItems
+
+	for rows.Next() {
+		var h HistoryItems
+		rows.Scan(&h.Type, &h.Status, &h.CreatedAt, &h.DurationMS)
+		history = append(history, h)
+	}
+
+	json.NewEncoder(w).Encode(history)
 }
 
 func (s *Server) ListDatabases(w http.ResponseWriter, r *http.Request) {

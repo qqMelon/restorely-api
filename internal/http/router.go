@@ -21,5 +21,7 @@ func (s *Server) Router() http.Handler {
 		}
 	})
 
+	mux.HandleFunc("/databases/{id}/history", s.DatabaseHistory)
+
 	return withCORS(mux)
 }
