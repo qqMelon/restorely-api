@@ -98,6 +98,28 @@ func (s *Server) ListDatabases(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(databases)
 }
 
+func (s *Server) GetDatabase(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	if _, err := uuid.Parse(id); err != nil {
+		http.Error(w, "invalid database id", http.StatusBadRequest)
+		return
+	}
+
+	db, err := store.GetDatabaseByID(r.Context(), s.DB, id)
+	if err != nil {
+		http.Error(w, "query failed", http.StatusInternalServerError)
+		return
+	}
+
+	if db == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	json.NewEncoder(w).Encode(db)
+}
+
 func (s *Server) CreateDatabase(w http.ResponseWriter, r *http.Request) {
 	log.Println("CreateDatabase called")
 	var req CreateDatabaseRequest

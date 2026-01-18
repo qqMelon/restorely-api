@@ -16,6 +16,7 @@ func (s *Server) Router() http.Handler {
 	r.Route("/databases", func(r chi.Router) {
 		r.Get("/", s.ListDatabases)
 		r.Post("/", s.CreateDatabase)
+		r.Get("/{id}", s.GetDatabase)
 		r.Get("/{id}/history", s.DatabaseHistory)
 	})
 

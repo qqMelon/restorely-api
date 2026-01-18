@@ -6,6 +6,9 @@ type Database struct {
 	ID	string 	`json:"id"`
 	Name string `json:"name"`
 	Type string `json:"type"`
+	Host string `json:"Host"`
+	Port int64 `json:"port"`
+	DBName string `json:"dbname"`
 	LastBackup *Backup `json:"last_backup"`
 	LastRestoreTest *RestoreTest `json:"last_restore_test"`
 }
